@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Dilian_slutuppgift")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+66c0d8a1ca834ee1b83347fdb88f6fadb5c58030")]
 [assembly: System.Reflection.AssemblyProductAttribute("Dilian_slutuppgift")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Dilian_slutuppgift")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
