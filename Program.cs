@@ -72,6 +72,12 @@ class Program
         var book = new Book { Title = title, ISBN = isbn };
         
         Console.WriteLine("Ange ID för författare (separera med komma om flera):"); // Prompt for author IDs
+        var authors = context.Authors.ToList();
+        System.Console.WriteLine("Välj från listan:");
+        foreach (var author in authors)
+        {
+            System.Console.WriteLine($"Author: {author.Name} har Id {author.Id}"); 
+        }
         var authorIds = Console.ReadLine().Split(',').Select(int.Parse);    // Read the input string
         
         foreach (var id in authorIds)
@@ -98,9 +104,11 @@ class Program
         // Iterate through each book and display its details
         foreach (var book in books)
         {
-            Console.WriteLine($"\nTitel: {book.Title}");
-            Console.WriteLine($"ISBN: {book.ISBN}");
-            Console.WriteLine("Författare: " + string.Join(", ", book.Authors.Select(a => a.Name)));
+            Console.WriteLine("\n======================");
+            Console.WriteLine($"  Titel:      {book.Title}");
+            Console.WriteLine($"  ISBN:       {book.ISBN}");
+            Console.WriteLine($"  Författare: {string.Join(", ", book.Authors.Select(a => a.Name))}");
+            Console.WriteLine("======================");
         }
     }
 
