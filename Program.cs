@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 
 class Program
 {
@@ -6,6 +8,12 @@ class Program
     {
         // Initialize the database context
         using var context = new LibraryContext();
+
+        // Seed initial data if database is empty
+        if (!context.Authors.Any() && !context.Books.Any() && !context.BookLoans.Any())
+        {
+            SeedData(context);
+        }
         
         // Infinite loop to display the menu until the user chooses to exit
         while (true)
@@ -16,7 +24,12 @@ class Program
             Console.WriteLine("3. Visa alla böcker och författare");
             Console.WriteLine("4. Registrera boklån");
             Console.WriteLine("5. Visa alla lån");
-            Console.WriteLine("6. Avsluta");
+            Console.WriteLine("6. Ta bort författare");
+            Console.WriteLine("7. Ta bort bok"); 
+            Console.WriteLine("8. Ta bort lån");
+            Console.WriteLine("9. Visa utlånade böcker");
+            Console.WriteLine("10. Avsluta");
+            Console.WriteLine("11. Radera all data"); 
             
             // Read the user's menu choice
             var choice = Console.ReadLine();
@@ -40,9 +53,93 @@ class Program
                     ShowAllLoans(context);  // Display all book loans
                     break;
                 case "6":
+                    RemoveAuthor(context);  // Remove an author
+                    break;
+                case "7":
+                    RemoveBook(context);    // Remove a book
+                    break;
+                case "8":
+                    RemoveLoan(context);    // Remove a loan
+                    break;
+                case "9":
+                    ShowLoanedBooks(context); // Display all currently loaned books
+                    break;
+                case "10":
                     return; // Exit the application
+                case "11":
+                    DeleteAllData(context); // Nytt fall för att radera all data
+                    break;
+                default:
+                    Console.WriteLine("\nOgiltig inmatning! Var god välj ett nummer mellan 1-11.");
+                    break;
             }
         }
+    }
+
+    // Method to seed initial data
+    static void SeedData(LibraryContext context)
+    {
+        var random = new Random();
+        var firstNames = new[] { "Johan", "Maria", "Erik", "Anna", "Karl", "Eva", "Anders", "Lisa", "Per", "Sofia" };
+        var lastNames = new[] { "Andersson", "Nilsson", "Karlsson", "Svensson", "Pettersson", "Larsson", "Berg", "Åberg", "Holm", "Lindberg" };
+        var bookTitles = new[] { "Historien om", "Äventyret med", "Mysteriet med", "Sagan om", "Berättelsen om" };
+        var bookSubjects = new[] { "Draken", "Riddaren", "Prinsessan", "Trollkarlen", "Skatten", "Slottet", "Skogen", "Havet", "Staden", "Resan" };
+
+        // Create 100 authors
+        for (int i = 0; i < 10; i++)
+        {
+            var author = new Author 
+            { 
+                Name = $"{firstNames[random.Next(firstNames.Length)]} {lastNames[random.Next(lastNames.Length)]}" 
+            };
+            context.Authors.Add(author);
+        }
+        context.SaveChanges();
+
+        var authors = context.Authors.ToList();
+
+        // Create 100 books with random authors
+        for (int i = 0; i < 100; i++)
+        {
+            var book = new Book
+            {
+                Title = $"{bookTitles[random.Next(bookTitles.Length)]} {bookSubjects[random.Next(bookSubjects.Length)]}",
+                ISBN = $"{random.Next(100, 999)}-{random.Next(1000000, 9999999)}"
+            };
+
+            // Add 1-3 random authors to each book
+            var authorCount = random.Next(1, 4);
+            var randomAuthors = authors.OrderBy(x => random.Next()).Take(authorCount);
+            foreach (var author in randomAuthors)
+            {
+                book.Authors.Add(author);
+            }
+
+            context.Books.Add(book);
+        }
+        context.SaveChanges();
+
+        var books = context.Books.ToList();
+        var borrowerNames = new[] { "Adam", "Beatrice", "Carl", "Diana", "Edward", "Fiona", "Gustav", "Helena", "Isak", "Julia" };
+
+        // Create 100 loans with random books and borrowers
+        for (int i = 0; i < 100; i++)
+        {
+            var daysAgo = random.Next(-30, 30); // Loans from 30 days ago to 30 days in future
+            var loanDate = DateTime.Now.AddDays(daysAgo);
+            
+            var loan = new BookLoan
+            {
+                BookId = books[random.Next(books.Count)].Id,
+                BorrowerName = borrowerNames[random.Next(borrowerNames.Length)],
+                LoanDate = loanDate,
+                ReturnDate = loanDate.AddDays(14)
+            };
+            context.BookLoans.Add(loan);
+        }
+        context.SaveChanges();
+
+        Console.WriteLine("Database seeded with 100 authors, books, and loans!");
     }
 
     // Method to add a new author to the database
@@ -149,6 +246,146 @@ class Program
             Console.WriteLine($"Låntagare: {loan.BorrowerName}");
             Console.WriteLine($"Utlåningsdatum: {loan.LoanDate:d}");
             Console.WriteLine($"Återlämningsdatum: {loan.ReturnDate:d}");
+        }
+    }
+
+    // Method to remove an author from the database
+    static void RemoveAuthor(LibraryContext context)
+    {
+        Console.WriteLine("Ange författarens ID som ska tas bort:");
+        var authors = context.Authors.ToList();
+        foreach (var author in authors)
+        {
+            Console.WriteLine($"ID: {author.Id}, Namn: {author.Name}");
+        }
+        
+        if (int.TryParse(Console.ReadLine(), out int authorId))
+        {
+            var author = context.Authors.Find(authorId);
+            if (author != null)
+            {
+                context.Authors.Remove(author);
+                // Get all books associated with this author
+                var authorBooks = context.Books
+                    .Include(b => b.Authors)
+                    .Where(b => b.Authors.Any(a => a.Id == authorId))
+                    .ToList();
+
+                // Remove each book associated with the author
+                foreach (var book in authorBooks)
+                {
+                    context.Books.Remove(book);
+                }
+                context.SaveChanges();
+                Console.WriteLine("Författaren har tagits bort!");
+            }
+            else
+            {
+                Console.WriteLine("Författaren hittades inte.");
+            }
+        }
+    }
+
+    // Method to remove a book from the database
+    static void RemoveBook(LibraryContext context)
+    {
+        Console.WriteLine("Ange bokens ID som ska tas bort:");
+        var books = context.Books.ToList();
+        foreach (var book in books)
+        {
+            Console.WriteLine($"ID: {book.Id}, Titel: {book.Title}");
+        }
+        
+        if (int.TryParse(Console.ReadLine(), out int bookId))
+        {
+            var book = context.Books.Find(bookId);
+            if (book != null)
+            {
+                context.Books.Remove(book);
+                context.SaveChanges();
+                Console.WriteLine("Boken har tagits bort!");
+            }
+            else
+            {
+                Console.WriteLine("Boken hittades inte.");
+            }
+        }
+    }
+
+    // Method to remove a loan from the database
+    static void RemoveLoan(LibraryContext context)
+    {
+        Console.WriteLine("Ange lånets ID som ska tas bort:");
+        var loans = context.BookLoans.Include(l => l.Book).ToList();
+        foreach (var loan in loans)
+        {
+            Console.WriteLine($"ID: {loan.Id}, Bok: {loan.Book.Title}, Låntagare: {loan.BorrowerName}");
+        }
+        
+        if (int.TryParse(Console.ReadLine(), out int loanId))
+        {
+            var loan = context.BookLoans.Find(loanId);
+            if (loan != null)
+            {
+                context.BookLoans.Remove(loan);
+                context.SaveChanges();
+                Console.WriteLine("Lånet har tagits bort!");
+            }
+            else
+            {
+                Console.WriteLine("Lånet hittades inte.");
+            }
+        }
+    }
+
+    // Method to show currently loaned books
+    static void ShowLoanedBooks(LibraryContext context)
+    {
+        var currentLoans = context.BookLoans
+            .Include(l => l.Book)
+            .Where(l => l.ReturnDate > DateTime.Now)
+            .ToList();
+
+        if (currentLoans.Any())
+        {
+            Console.WriteLine("\nAktuella lån:");
+            foreach (var loan in currentLoans)
+            {
+                Console.WriteLine($"\nBok: {loan.Book.Title}");
+                Console.WriteLine($"Låntagare: {loan.BorrowerName}");
+                Console.WriteLine($"Återlämnas: {loan.ReturnDate:d}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("\nInga aktiva lån just nu.");
+        }
+    }
+
+    // Ny metod för att radera all data
+    static void DeleteAllData(LibraryContext context)
+    {
+        Console.WriteLine("Är du säker på att du vill radera all data? (ja/nej)");
+        var confirmation = Console.ReadLine();
+        if (confirmation?.ToLower() == "ja")
+        {
+            try
+            {
+                // Börja med att ta bort relaterade poster för att undvika referensfel
+                context.BookLoans.RemoveRange(context.BookLoans);
+                context.Books.RemoveRange(context.Books);
+                context.Authors.RemoveRange(context.Authors);
+                context.SaveChanges();
+                Console.WriteLine("All data har raderats.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ett fel uppstod: {ex.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Åtgärd avbruten.");
         }
     }
 }
