@@ -144,3 +144,4 @@ C:\Users\46706\Desktop\Development\Projekt\Databaser\Dilian_slutuppgift\obj\Debu
 C:\Users\46706\Desktop\Development\Projekt\Databaser\Dilian_slutuppgift\obj\Debug\net9.0\Dilian_slutuppgift.pdb
 C:\Users\46706\Desktop\Development\Projekt\Databaser\Dilian_slutuppgift\obj\Debug\net9.0\Dilian_slutuppgift.genruntimeconfig.cache
 C:\Users\46706\Desktop\Development\Projekt\Databaser\Dilian_slutuppgift\obj\Debug\net9.0\ref\Dilian_slutuppgift.dll
+C:\Users\46706\Desktop\Development\Projekt\Databaser\Dilian_slutuppgift\obj\Debug\net9.0\Dilian_slutuppgift.sourcelink.json
