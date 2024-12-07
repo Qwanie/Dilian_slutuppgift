@@ -30,6 +30,9 @@ class Program
             Console.WriteLine("9. Visa utlånade böcker");
             Console.WriteLine("10. Avsluta");
             Console.WriteLine("11. Radera all data"); 
+            Console.WriteLine("12. Lista alla böcker av en författare");
+            Console.WriteLine("13. Lista alla författare av en bok");
+            Console.WriteLine("14. Visa lånehistorik"); 
             
             // Read the user's menu choice
             var choice = Console.ReadLine();
@@ -67,10 +70,19 @@ class Program
                 case "10":
                     return; // Exit the application
                 case "11":
-                    DeleteAllData(context); // Nytt fall för att radera all data
+                    DeleteAllData(context); // Delete all data
+                    break;
+                case "12":
+                    ListBooksByAuthor(context); // List books and authors
+                    break;
+                case "13":
+                    ListAuthorsByBook(context); // List authors by book
+                    break;
+                case "14":
+                    ShowLoanHistory(context); // Visa lånehistorik
                     break;
                 default:
-                    Console.WriteLine("\nOgiltig inmatning! Var god välj ett nummer mellan 1-11.");
+                    Console.WriteLine("\nOgiltig inmatning! Var god välj ett nummer mellan 1-14."); // Error handling
                     break;
             }
         }
@@ -85,7 +97,7 @@ class Program
         var bookTitles = new[] { "Historien om", "Äventyret med", "Mysteriet med", "Sagan om", "Berättelsen om" };
         var bookSubjects = new[] { "Draken", "Riddaren", "Prinsessan", "Trollkarlen", "Skatten", "Slottet", "Skogen", "Havet", "Staden", "Resan" };
 
-        // Create 100 authors
+        // Create 10 authors
         for (int i = 0; i < 10; i++)
         {
             var author = new Author 
@@ -386,6 +398,166 @@ class Program
         else
         {
             Console.WriteLine("Åtgärd avbruten.");
+        }
+    }
+
+    // Ny metod för att lista alla böcker av en specifik författare
+    static void ListBooksByAuthor(LibraryContext context)
+    {
+        Console.WriteLine("Ange författarens ID eller namn:");
+        var input = Console.ReadLine();
+
+        if (int.TryParse(input, out int authorId))
+        {
+            var author = context.Authors
+                                .Include(a => a.Books)
+                                .FirstOrDefault(a => a.Id == authorId);
+            if (author != null)
+            {
+                Console.WriteLine($"\nFörfattare: {author.Name}");
+                if (author.Books.Any())
+                {
+                    Console.WriteLine("Böcker:");
+                    foreach (var book in author.Books)
+                    {
+                        Console.WriteLine($"- {book.Title} (ISBN: {book.ISBN})");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Denna författare har inga böcker listade.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Författaren hittades inte.");
+            }
+        }
+        else
+        {
+            var authors = context.Authors
+                                 .Where(a => a.Name.Contains(input))
+                                 .Include(a => a.Books)
+                                 .ToList();
+
+            if (authors.Any())
+            {
+                foreach (var author in authors)
+                {
+                    Console.WriteLine($"\nFörfattare: {author.Name}");
+                    if (author.Books.Any())
+                    {
+                        Console.WriteLine("Böcker:");
+                        foreach (var book in author.Books)
+                        {
+                            Console.WriteLine($"- {book.Title} (ISBN: {book.ISBN})");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Denna författare har inga böcker listade.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Ingen författare matchar den angivna inmatningen.");
+            }
+        }
+    }
+
+    // Ny metod för att lista alla författare av en specifik bok
+    static void ListAuthorsByBook(LibraryContext context)
+    {
+        Console.WriteLine("Ange bokens ID eller titel:");
+        var input = Console.ReadLine();
+
+        if (int.TryParse(input, out int bookId))
+        {
+            var book = context.Books
+                              .Include(b => b.Authors)
+                              .FirstOrDefault(b => b.Id == bookId);
+            if (book != null)
+            {
+                Console.WriteLine($"\nBok: {book.Title} (ISBN: {book.ISBN})");
+                if (book.Authors.Any())
+                {
+                    Console.WriteLine("Författare:");
+                    foreach (var author in book.Authors)
+                    {
+                        Console.WriteLine($"- {author.Name}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Denna bok har inga författare listade.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Boken hittades inte.");
+            }
+        }
+        else
+        {
+            var books = context.Books
+                               .Where(b => b.Title.Contains(input))
+                               .Include(b => b.Authors)
+                               .ToList();
+
+            if (books.Any())
+            {
+                foreach (var book in books)
+                {
+                    Console.WriteLine($"\nBok: {book.Title} (ISBN: {book.ISBN})");
+                    if (book.Authors.Any())
+                    {
+                        Console.WriteLine("Författare:");
+                        foreach (var author in book.Authors)
+                        {
+                            Console.WriteLine($"- {author.Name}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Denna bok har inga författare listade.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Ingen bok matchar den angivna inmatningen.");
+            }
+        }
+    }
+
+    // Ny metod för att visa lånehistorik
+    static void ShowLoanHistory(LibraryContext context)
+    {
+        Console.WriteLine("\nLånehistorik:");
+        
+        // Hämtar alla lån där ReturnDate är tidigare än eller lika med dagens datum
+        var loanHistory = context.BookLoans
+                                 .Include(l => l.Book)
+                                 .Where(l => l.ReturnDate <= DateTime.Now)
+                                 .OrderByDescending(l => l.LoanDate)
+                                 .ToList();
+
+        if (loanHistory.Any())
+        {
+            foreach (var loan in loanHistory)
+            {
+                Console.WriteLine("\n======================");
+                Console.WriteLine($"Bok: {loan.Book.Title} (ISBN: {loan.Book.ISBN})");
+                Console.WriteLine($"Låntagare: {loan.BorrowerName}");
+                Console.WriteLine($"Utlåningsdatum: {loan.LoanDate:d}");
+                Console.WriteLine($"Återlämningsdatum: {loan.ReturnDate:d}");
+                Console.WriteLine("======================");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Inga tidigare lån finns registrerade.");
         }
     }
 }
