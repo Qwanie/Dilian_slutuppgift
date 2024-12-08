@@ -79,7 +79,7 @@ class Program
                     ListAuthorsByBook(context); // List authors by book
                     break;
                 case "14":
-                    ShowLoanHistory(context); // Visa lånehistorik
+                    ShowLoanHistory(context); // Display loan history
                     break;
                 default:
                     Console.WriteLine("\nOgiltig inmatning! Var god välj ett nummer mellan 1-14."); // Error handling
